@@ -1,7 +1,8 @@
 {
   "commands": {
-    "bots": "List available voice bots",
-    "help": "List all commands",
-    "example": "Give an example voice bot command"
+    "!bots": "List available voice bots",
+    "!help": "List all commands",
+    "!example": "Give an example voice bot command",
+    "!git": "Link to github repository"
   }
 }
