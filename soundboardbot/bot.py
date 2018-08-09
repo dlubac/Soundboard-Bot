@@ -7,6 +7,7 @@ from discord.ext import commands
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
 
 # Load opus codec
 if not discord.opus.is_loaded():
@@ -174,12 +175,35 @@ async def on_message(message):
         return
 
 
-if __name__ == '__main__':
-    """ Reads in bot secret and starts bot
-
+def run(secret_env_var: str = 'BOT_SECRET', secret_file_path: str = None):
+    """
+    Looks for the bot secret in either an environment variable or a file, loads it, and starts the bot
+    :param secret_env_var: Optional. Name of environment variable where bot secret is stored
+    :param secret_file_path: Optional. Path to file that contains bot secret
+    :return:
     """
 
-    with open('bot-secret.txt', 'r') as f:
-        bot_secret = f.read()
+    try:
+        secret = os.environ[secret_env_var]
+    except KeyError:
+        try:
+            with open(secret_file_path, 'r') as f:
+                secret = f.read()
+        except FileNotFoundError:
+            LOGGER.error('Unable to get secret from environment variable "' + secret_env_var + '" or file ' +
+                         secret_file_path)
+            return
+        except TypeError:
+            LOGGER.error('Unable to get secret from environment variable "' + secret_env_var +
+                         '" and no secret file provided.')
+            return
 
-    client.run(bot_secret)
+    try:
+        client.run(secret)
+    except discord.errors.LoginFailure:
+        LOGGER.error('Invalid token passed to bot, exiting.')
+        return
+
+
+if __name__ == '__main__':
+    run()
