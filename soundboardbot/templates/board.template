@@ -1,0 +1,66 @@
+import asyncio
+import discord
+import os
+from glob import glob
+
+from discord.ext import commands
+
+RESERVED_SUBCOMMANDS = ['clips', 'help']
+
+if not discord.opus.is_loaded():
+    discord.opus.load_opus('libopus.so.1')
+
+
+class <className>:
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.group(name='<commandName>')
+    async def play_audio(self, ctx, arg):
+        """
+        Play an audio clip
+        :param ctx: message context
+        :param arg: subcommand
+        :return:
+        """
+
+        if arg in RESERVED_SUBCOMMANDS:
+            await self.reserved_commands(self, ctx, arg)
+        else:
+
+            voice = await ctx.author.voice.channel.connect()
+            file = 'boards/<commandName>/' + arg + '.mp3'
+            voice.play(discord.FFmpegPCMAudio(file), after=lambda e: print('done', e))
+
+    def disconnect_voice(self, voice, bot):
+        coroutine = voice.disconnect()
+        fut = asyncio.run_coroutine_threadsafe(coroutine, bot)
+
+        try:
+            fut.result()
+        except asyncio.CancelledError as e:
+            print(e)
+
+    @staticmethod
+    async def reserved_commands(self, ctx, arg):
+        """
+        Handle reserved commands
+        :param ctx: message context
+        :param arg: subcommand
+        :return:
+        """
+
+        if arg == 'clips':
+            cwd = os.getcwd()
+            os.chdir('boards/<commandName>')
+
+            clips_map = map(lambda board: board.replace('.mp3', ''), glob('*.mp3'))
+            clips = 'Available clips for <commandName>:\n' + '\n'.join(list(clips_map))
+
+            os.chdir(cwd)
+
+            await ctx.message.author.send(clips)
+
+
+def setup(bot):
+    bot.add_cog(<className>(bot))
