@@ -22,6 +22,7 @@ async def on_ready():
     LOGGER.info('Starting generation and loading of board cogs')
 
     boards = list(map(lambda b: b.replace('boards/', '').lower(), glob('boards/*')))
+
     for board in boards:
         template_text = populate_board_template('templates/board.template', board)
 
@@ -29,6 +30,8 @@ async def on_ready():
             f.write(template_text)
 
         bot.load_extension('cogs.' + board)
+
+    bot.load_extension('cogs.meta')  # TODO - Get list of cogs and load all at once
 
 
 def populate_board_template(template: str, class_name: str) -> str:
@@ -64,12 +67,10 @@ def run(token_env_var: str = 'BOT_TOKEN', token_file_path: str = None):
             with open(token_file_path, 'r') as f:
                 token = f.read()
         except FileNotFoundError:
-            LOGGER.error('Unable to get token from environment variable "' + token_env_var + '" or file ' +
-                         token_file_path)
+            LOGGER.error(f'Unable to get token from environment variable "{token_env_var}" or file {token_file_path}')
             return
         except TypeError:
-            LOGGER.error('Unable to get token from environment variable "' + token_env_var +
-                         '" and no token file provided.')
+            LOGGER.error(f'Unable to get token from environment variable "{token_env_var}" and no token file provided.')
             return
 
     try:

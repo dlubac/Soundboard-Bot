@@ -1,0 +1,3 @@
+BOT_USER_ROLE_NAME = 'BotUser'
+BOT_ADMIN_ROLE_NAME = 'BotAdmin'
+BOT_OWNER_ROLE_NAME = 'BotOwner'
