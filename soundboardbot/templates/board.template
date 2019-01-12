@@ -1,12 +1,16 @@
 import asyncio
-import discord
+import logging
 import os
 from glob import glob
 
+import discord
 from discord.ext import commands
 
 from soundboardbot.models.bot_role import BotRole
 from soundboardbot.utils import sb_utils
+
+logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
 
 RESERVED_SUBCOMMANDS = ['clips']
 
@@ -28,7 +32,7 @@ class <className>:
         """
 
         if arg in RESERVED_SUBCOMMANDS:
-            await self.reserved_commands(self, ctx, arg)
+            await self.reserved_commands(ctx, arg)
         else:
             await ctx.message.delete()
             user_registered = sb_utils.has_role(member=ctx.message.author, role_name=BotRole.USER.value)
@@ -44,22 +48,27 @@ class <className>:
 
                 await voice.disconnect()
             elif not user_registered:
-                await ctx.message.author.send('You are not registered to use the bot. Type !register')
+                await ctx.message.author.send('```You are not registered to use the bot. Type !register```')
             else:
-                await ctx.message.author.send('You are banned from using the bot. Yikes.')
+                await ctx.message.author.send('```You are banned from using the bot. Yikes.```')
 
-
-    def disconnect_voice(self, voice, bot):
+    @staticmethod
+    def disconnect_voice(voice, bot):
+        """
+        Disconnect the bot from a voice channel
+        :param voice: Voice channel
+        :param bot: Bot object
+        """
         coroutine = voice.disconnect()
         fut = asyncio.run_coroutine_threadsafe(coroutine, bot)
 
         try:
             fut.result()
         except asyncio.CancelledError as e:
-            print(e)
+            LOGGER.error(e)
 
     @staticmethod
-    async def reserved_commands(self, ctx, arg):
+    async def reserved_commands(ctx, arg):
         """
         Handle reserved commands
         :param ctx: message context
@@ -68,15 +77,16 @@ class <className>:
         """
 
         if arg == 'clips':
-            cwd = os.getcwd()
+            original_dir = os.getcwd()
             os.chdir('boards/<commandName>')
 
-            clips_map = map(lambda board: board.replace('.mp3', ''), glob('*.mp3'))
-            clips = 'Available clips for <commandName>:\n' + '\n'.join(list(clips_map))
+            clips = list(map(lambda board: board.replace('.mp3', ''), glob('*.mp3')))
+            clips_formatted = ['\n\t - ' + clip for clip in clips]
+            clips_message = '```Clips for <commandName>:' + ''.join(clips_formatted) + '```'
 
-            os.chdir(cwd)
+            os.chdir(original_dir)
 
-            await ctx.message.author.send(clips)
+            await ctx.message.author.send(clips_message)
 
         await ctx.message.delete()
 

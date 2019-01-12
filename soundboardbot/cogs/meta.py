@@ -31,10 +31,11 @@ class Meta:
         Send user message with list of boards
         :param ctx: message context
         """
-        board_map = map(lambda board: board.replace('boards/', ''), glob('boards/*'))
-        boards = 'Available soundboards:\n' + '\n'.join(list(board_map))
+        boards = list(map(lambda board: board.replace('boards/', ''), glob('boards/*')))
+        boards_formatted = ['\n\t - ' + board for board in boards]
+        boards_message = '```Soundboards:' + ''.join(boards_formatted) + '```'
 
-        await ctx.message.author.send(boards)
+        await ctx.message.author.send(boards_message)
         await ctx.message.delete()
 
     @commands.command(name='setup')
@@ -56,7 +57,7 @@ class Meta:
                 else:
                     LOGGER.info(f'Role {role} already exists')
         else:
-            await ctx.message.author.send('You must have the BotOwner role to run the !setup command.')
+            await ctx.message.author.send('```You must have the BotOwner role to run the !setup command.```')
 
         await ctx.message.delete()
 
@@ -71,10 +72,11 @@ class Meta:
         if BotRole.USER.value not in roles:
             bot_user_role = utils.get(ctx.guild.roles, name=BotRole.USER.value)
             await ctx.message.author.add_roles(bot_user_role)
-            await ctx.message.author.send('You are now registered to use the bot. Try typing !help to get started.')
+            await ctx.message.author.send('```You are now registered to use the bot. Try typing !help to get started.'
+                                          '```')
             LOGGER.info(f'Registered user {ctx.message.author}')
         else:
-            await ctx.message.author.send('You are already registered to use the bot')
+            await ctx.message.author.send('```You are already registered to use the bot```')
 
         await ctx.message.delete()
 
