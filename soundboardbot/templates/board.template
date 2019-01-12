@@ -5,10 +5,10 @@ from glob import glob
 
 from discord.ext import commands
 
-from soundboardbot.config.constants import BOT_USER_ROLE_NAME
+from soundboardbot.models.bot_role import BotRole
 from soundboardbot.utils import sb_utils
 
-RESERVED_SUBCOMMANDS = ['clips', 'help']
+RESERVED_SUBCOMMANDS = ['clips']
 
 if not discord.opus.is_loaded():
     discord.opus.load_opus('libopus.so.1')
@@ -31,7 +31,10 @@ class <className>:
             await self.reserved_commands(self, ctx, arg)
         else:
             await ctx.message.delete()
-            if sb_utils.has_role(member=ctx.message.author, role_name=BOT_USER_ROLE_NAME):
+            user_registered = sb_utils.has_role(member=ctx.message.author, role_name=BotRole.USER.value)
+            user_banned = sb_utils.has_role(member=ctx.message.author, role_name=BotRole.BANNED.value)
+
+            if user_registered and not user_banned:
                 voice = await ctx.author.voice.channel.connect()
                 file = f'boards/<commandName>/{arg}.mp3'
                 voice.play(discord.FFmpegPCMAudio(file), after=lambda e: print('done', e))
@@ -40,8 +43,11 @@ class <className>:
                     await asyncio.sleep(1)
 
                 await voice.disconnect()
+            elif not user_registered:
+                await ctx.message.author.send('You are not registered to use the bot. Type !register')
             else:
-                await ctx.message.author.send('You are not registered to use the bot. Type !register to register yourself.')
+                await ctx.message.author.send('You are banned from using the bot. Yikes.')
+
 
     def disconnect_voice(self, voice, bot):
         coroutine = voice.disconnect()

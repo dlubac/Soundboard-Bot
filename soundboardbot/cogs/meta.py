@@ -4,7 +4,8 @@ from glob import glob
 from discord import utils
 from discord.ext import commands
 
-from soundboardbot.config import constants
+from soundboardbot.models.bot_role import BotRole
+from soundboardbot.config.help_message import HELP_MESSAGE
 from soundboardbot.utils import sb_utils
 
 logging.basicConfig(level=logging.INFO)
@@ -15,13 +16,21 @@ class Meta:
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command(name='help')
+    async def help(self, ctx):
+        """
+        Send user message will basic usage info
+        :param ctx: message context
+        """
+        await ctx.message.author.send(HELP_MESSAGE)
+        await ctx.message.delete()
+
     @commands.command(name='boards')
     async def boards(self, ctx):
         """
         Send user message with list of boards
         :param ctx: message context
         """
-
         board_map = map(lambda board: board.replace('boards/', ''), glob('boards/*'))
         boards = 'Available soundboards:\n' + '\n'.join(list(board_map))
 
@@ -34,13 +43,12 @@ class Meta:
         Setup roles for the bot
         :param ctx: message context
         """
-        if sb_utils.has_role(ctx.message.author, constants.BOT_OWNER_ROLE_NAME):
-            bot_roles = [constants.BOT_USER_ROLE_NAME, constants.BOT_ADMIN_ROLE_NAME]
+        guild = ctx.message.guild
+        roles = guild.roles
+        role_names = [role.name for role in roles]
 
-            guild = ctx.message.guild
-            roles = guild.roles
-            role_names = [role.name for role in roles]
-
+        if sb_utils.has_role(ctx.message.author, BotRole.OWNER.value) or BotRole.OWNER.value not in role_names:
+            bot_roles = [role.value for role in BotRole]
             for role in bot_roles:
                 if role not in role_names:
                     await guild.create_role(name=role)
@@ -48,7 +56,7 @@ class Meta:
                 else:
                     LOGGER.info(f'Role {role} already exists')
         else:
-            await ctx.message.author.send('You are not authorized to do that!')
+            await ctx.message.author.send('You must have the BotOwner role to run the !setup command.')
 
         await ctx.message.delete()
 
@@ -60,8 +68,8 @@ class Meta:
         """
         roles = [role.name for role in ctx.message.author.roles]
 
-        if constants.BOT_USER_ROLE_NAME not in roles:
-            bot_user_role = utils.get(ctx.guild.roles, name=constants.BOT_USER_ROLE_NAME)
+        if BotRole.USER.value not in roles:
+            bot_user_role = utils.get(ctx.guild.roles, name=BotRole.USER.value)
             await ctx.message.author.add_roles(bot_user_role)
             await ctx.message.author.send('You are now registered to use the bot. Try typing !help to get started.')
             LOGGER.info(f'Registered user {ctx.message.author}')

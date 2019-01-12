@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 # Bot setup
-bot = commands.Bot(description="Soundboard bot", command_prefix='!', pm_help=True)
+bot = commands.Bot(description="Soundboard bot", command_prefix='!')
 
 
 @bot.event
@@ -19,19 +19,22 @@ async def on_ready():
     Print basic info on startup and load extensions
     :return:
     """
+    # Remove the default help command, a custom one will be created
+    bot.remove_command('help')
+
+    # Create and log a cog for each soundboard
     LOGGER.info('Starting generation and loading of board cogs')
-
     boards = list(map(lambda b: b.replace('boards/', '').lower(), glob('boards/*')))
-
     for board in boards:
         template_text = populate_board_template('templates/board.template', board)
 
         with open('cogs/' + board + '.py', 'w') as f:
             f.write(template_text)
 
-        bot.load_extension('cogs.' + board)
-
-    bot.load_extension('cogs.meta')  # TODO - Get list of cogs and load all at once
+    cog_names = [os.path.basename(x).replace('.py', '') for x in glob('cogs/*.py')]
+    for name in cog_names:
+        LOGGER.info(f'Loading cog: {name}')
+        bot.load_extension(f'cogs.{name}')
 
 
 def populate_board_template(template: str, class_name: str) -> str:
